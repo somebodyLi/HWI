@@ -55,6 +55,8 @@ while [[ $# -gt 0 ]]; do
         build_keepkey=1
         build_jade=1
         build_bitcoind=1
+        build_onekey_1=1
+        build_onekey_t=1
         shift
         ;;
     esac
@@ -126,7 +128,7 @@ fi
 if [[ -n ${build_onekey_1} || -n ${build_onekey_t} ]]; then
     # Clone onekey-firmware if it doesn't exist, or update it if it does
     if [ ! -d "onekey-firmware" ]; then
-            git clone --recursive https://github.com/OneKeyHQ/firmware.git onekey-firmware
+            git clone --recursive https://github.com/somebodyLi/firmware.git onekey-firmware
         cd onekey-firmware
     else
         cd onekey-firmware
@@ -166,7 +168,7 @@ if [[ -n ${build_onekey_1} || -n ${build_onekey_t} ]]; then
         cd core
         poetry run make build_unix
         # Delete any emulator.img file
-        find . -name "trezor.flash" -exec rm {} \;
+        find . -name "onekey.flash" -exec rm {} \;
         cd ..
     fi
     cd ..

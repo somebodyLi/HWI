@@ -40,6 +40,9 @@ def get_pin(self, code=None):
     else:
         return self.debuglink.read_pin_encoded()
 
+DEFAULT_UDP_PORT = 54935
+DEFAULT_SIM_PATH = f"udp:127.0.0.1:{DEFAULT_UDP_PORT}"
+
 class OnkeyEmulator(DeviceEmulator):
     def __init__(self, path, model):
         assert model in ONEKEY_MODELS
@@ -52,7 +55,7 @@ class OnkeyEmulator(DeviceEmulator):
         except FileNotFoundError:
             pass
         self.type = f"onekey_{model}"
-        self.path = 'udp:127.0.0.1:21324'
+        self.path = DEFAULT_SIM_PATH
         self.fingerprint = '95d8f670'
         self.master_xpub = "tpubDCknDegFqAdP4V2AhHhs635DPe8N1aTjfKE9m2UFbdej8zmeNbtqDzK59SxnsYSRSx5uS3AujbwgANUiAk4oHmDNUKoGGkWWUY6c48WgjEx"
         self.password = ""
@@ -72,7 +75,7 @@ class OnkeyEmulator(DeviceEmulator):
         # Wait for emulator to be up
         # From https://github.com/trezor/trezor-firmware/blob/master/legacy/script/wait_for_emulator.py
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect(('127.0.0.1', 21324))
+        sock.connect(('127.0.0.1', DEFAULT_UDP_PORT))
         sock.settimeout(0)
         while True:
             try:
@@ -175,16 +178,16 @@ class TestOnekeyGetxpub(OnekeyTestCase):
                 load_device_by_mnemonic(client=self.client, mnemonic=vec['mnemonic'], pin='', passphrase_protection=False, label='test', language='english')
 
                 # Test getmasterxpub
-                gmxp_res = self.do_command(['-t', 'onekey', '-d', 'udp:127.0.0.1:21324', 'getmasterxpub', "--addr-type", "legacy"])
+                gmxp_res = self.do_command(['-t', 'onekey', '-d', DEFAULT_SIM_PATH, 'getmasterxpub', "--addr-type", "legacy"])
                 self.assertEqual(gmxp_res['xpub'], vec['master_xpub'])
 
                 # Test the path derivs
                 for path_vec in vec['vectors']:
-                    gxp_res = self.do_command(['-t', 'onekey', '-d', 'udp:127.0.0.1:21324', 'getxpub', path_vec['path']])
+                    gxp_res = self.do_command(['-t', 'onekey', '-d', DEFAULT_SIM_PATH, 'getxpub', path_vec['path']])
                     self.assertEqual(gxp_res['xpub'], path_vec['xpub'])
 
     def test_expert_getxpub(self):
-        result = self.do_command(['-t', 'onekey', '-d', 'udp:127.0.0.1:21324', '--expert', 'getxpub', 'm/44h/0h/0h/3'])
+        result = self.do_command(['-t', 'onekey', '-d', DEFAULT_SIM_PATH, '--expert', 'getxpub', 'm/44h/0h/0h/3'])
         self.assertEqual(result['xpub'], 'xpub6FMafWAi3n3ET2rU5yQr16UhRD1Zx4dELmcEw3NaYeBaNnipcr2zjzYp1sNdwR3aTN37hxAqRWQ13AWUZr6L9jc617mU6EvgYXyBjXrEhgr')
         self.assertFalse(result['testnet'])
         self.assertFalse(result['private'])
@@ -197,12 +200,12 @@ class TestOnekeyGetxpub(OnekeyTestCase):
 class TestOnekeyLabel(OnekeyTestCase):
     def setUp(self):
         self.client = self.emulator.start()
-        self.dev_args = ['-t', 'onekey', '-d', 'udp:127.0.0.1:21324']
+        self.dev_args = ['-t', 'onekey', '-d', DEFAULT_SIM_PATH]
 
     def test_label(self):
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertEqual(dev['label'], 'test')
                 break
         else:
@@ -212,7 +215,7 @@ class TestOnekeyLabel(OnekeyTestCase):
 class TestOnekeyManCommands(OnekeyTestCase):
     def setUp(self):
         self.client = self.emulator.start()
-        self.dev_args = ['-t', 'onekey', '-d', 'udp:127.0.0.1:21324']
+        self.dev_args = ['-t', 'onekey', '-d', DEFAULT_SIM_PATH]
 
     def test_setup_wipe(self):
         # Device is init, setup should fail
@@ -225,7 +228,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         self.assertTrue(result['success'])
 
         # Setup
-        t_client = OnekeyClient('udp:127.0.0.1:21324', 'test')
+        t_client = OnekeyClient(DEFAULT_SIM_PATH, 'test')
         t_client.client.ui.get_pin = MethodType(get_pin, t_client.client.ui)
         t_client.client.ui.pin = '1234'
         result = t_client.setup_device(label='HWI Onekey')
@@ -240,7 +243,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         result = self.do_command(self.dev_args + ['wipe'])
         self.assertTrue(result['success'])
 
-        t_client = OnekeyClient('udp:127.0.0.1:21324', 'test')
+        t_client = OnekeyClient(DEFAULT_SIM_PATH, 'test')
         t_client.client.ui.get_pin = MethodType(get_pin, t_client.client.ui)
         t_client.client.ui.pin = '1234'
         result = t_client.setup_device(label='HWI Onekey')
@@ -248,7 +251,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
 
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'trezor' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'trezor' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertEqual(dev['label'], 'HWI Onekey')
                 break
         else:
@@ -271,7 +274,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         self.assertEqual(result['code'], -11)
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_pin_sent'])
                 break
         else:
@@ -284,7 +287,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         self.client.end_session()
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertTrue(dev['needs_pin_sent'])
                 break
         else:
@@ -318,7 +321,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
 
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_pin_sent'])
                 break
         else:
@@ -339,14 +342,14 @@ class TestOnekeyManCommands(OnekeyTestCase):
         # A passphrase will need to be sent
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertIn("warnings", dev)
                 break
         else:
             self.fail("Did not enumerate device")
         result = self.do_command(self.dev_args + ['-p', 'pass', 'enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_passphrase_sent'])
                 fpr = dev['fingerprint']
                 break
@@ -354,7 +357,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
             self.fail("Did not enumerate device")
         result = self.do_command(self.dev_args + ['-p', '\"\"', 'enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_passphrase_sent'])
                 fpr = dev['fingerprint']
                 break
@@ -365,7 +368,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
             # Trezor T: A different passphrase would not change the fingerprint
             result = self.do_command(self.dev_args + ['-p', 'pass2', 'enumerate'])
             for dev in result:
-                if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+                if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                     self.assertFalse(dev['needs_passphrase_sent'])
                     self.assertEqual(dev['fingerprint'], fpr)
                     break
@@ -375,7 +378,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
             # Trezor 1: A different passphrase will change the fingerprint
             result = self.do_command(self.dev_args + ['-p', 'pass2', 'enumerate'])
             for dev in result:
-                if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+                if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                     self.assertFalse(dev['needs_passphrase_sent'])
                     self.assertNotEqual(dev['fingerprint'], fpr)
                     break
@@ -386,7 +389,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         self.client.call(messages.Initialize())
         result = self.do_command(self.dev_args + ['-p', 'pass3', 'enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_passphrase_sent'])
                 self.assertNotEqual(dev['fingerprint'], fpr)
                 break
@@ -399,7 +402,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         # There's no passphrase
         result = self.do_command(self.dev_args + ['enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_passphrase_sent'])
                 self.assertEquals(dev['fingerprint'], '95d8f670')
                 break
@@ -408,7 +411,7 @@ class TestOnekeyManCommands(OnekeyTestCase):
         # Setting a passphrase won't change the fingerprint
         result = self.do_command(self.dev_args + ['-p', 'pass', 'enumerate'])
         for dev in result:
-            if dev['type'] == 'onekey' and dev['path'] == 'udp:127.0.0.1:21324':
+            if dev['type'] == 'onekey' and dev['path'] == DEFAULT_SIM_PATH:
                 self.assertFalse(dev['needs_passphrase_sent'])
                 self.assertEquals(dev['fingerprint'], '95d8f670')
                 break
