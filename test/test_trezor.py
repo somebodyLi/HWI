@@ -68,6 +68,7 @@ class TrezorEmulator(DeviceEmulator):
         super().start()
         self.emulator_log = open('trezor-{}-emulator.stdout'.format(self.model), 'a')
         # Start the Trezor emulator
+        print(f"{os.path.basename(self.emulator_path)} --model {self.model} cwd == {os.path.dirname(self.emulator_path)}")
         self.emulator_proc = subprocess.Popen(['./' + os.path.basename(self.emulator_path)], cwd=os.path.dirname(self.emulator_path), stdout=self.emulator_log, env={'SDL_VIDEODRIVER': 'dummy', 'PYOPT': '0'}, shell=True, preexec_fn=os.setsid)
         # Wait for emulator to be up
         # From https://github.com/trezor/trezor-firmware/blob/master/legacy/script/wait_for_emulator.py
