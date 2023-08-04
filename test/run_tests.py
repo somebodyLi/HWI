@@ -32,9 +32,9 @@ onekey_group = parser.add_mutually_exclusive_group()
 onekey_group.add_argument('--no-onekey-1', dest='onekey_1', help='Do not run OneKey Legacy test with emulator', action='store_false')
 onekey_group.add_argument('--onekey-1', dest='onekey_1', help='Run OneKey Legacy test with emulator', action='store_true')
 
-onekey_group = parser.add_mutually_exclusive_group()
-onekey_group.add_argument('--no-onekey-t', dest='onekey_t', help='Do not run OneKey Touch test with emulator', action='store_false')
-onekey_group.add_argument('--onekey-t', dest='onekey_t', help='Run OneKey Touch test with emulator', action='store_true')
+onekey_t_group = parser.add_mutually_exclusive_group()
+onekey_t_group.add_argument('--no-onekey-t', dest='onekey_t', help='Do not run OneKey Touch test with emulator', action='store_false')
+onekey_t_group.add_argument('--onekey-t', dest='onekey_t', help='Run OneKey Touch test with emulator', action='store_true')
 
 coldcard_group = parser.add_mutually_exclusive_group()
 coldcard_group.add_argument('--no-coldcard', dest='coldcard', help='Do not run Coldcard test with simulator', action='store_false')
@@ -63,7 +63,7 @@ dbb_group.add_argument('--bitbox01', dest='bitbox01', help='Run Digital Bitbox t
 parser.add_argument('--trezor-1-path', dest='trezor_1_path', help='Path to Trezor 1 emulator', default='work/trezor-firmware/legacy/firmware/trezor.elf')
 parser.add_argument('--trezor-t-path', dest='trezor_t_path', help='Path to Trezor T emulator', default='work/trezor-firmware/core/emu.sh')
 parser.add_argument('--onekey-1-path', dest='onekey_1_path', help='Path to OneKey Legacy emulator', default='work/onekey-firmware/legacy/firmware/onekey_emu.elf')
-parser.add_argument('--onekey-t-path', dest='onekey_t_path', help='Path to OneKey Touch emulator', default='work/onekey-firmware/core/emu.py')
+parser.add_argument('--onekey-t-path', dest='onekey_t_path', help='Path to OneKey Touch emulator', default='work/onekey-firmware/core/emu.sh')
 parser.add_argument('--coldcard-path', dest='coldcard_path', help='Path to Coldcar simulator', default='work/firmware/unix/headless.py')
 parser.add_argument('--keepkey-path', dest='keepkey_path', help='Path to Keepkey emulator', default='work/keepkey-firmware/bin/kkemu')
 parser.add_argument('--bitbox01-path', dest='bitbox01_path', help='Path to Digital Bitbox simulator', default='work/mcu/build/bin/simulator')
@@ -76,7 +76,7 @@ parser.add_argument('--interface', help='Which interface to send commands over',
 
 parser.add_argument("--device-only", help="Only run device tests", action="store_true")
 
-parser.set_defaults(trezor_1=None, trezor_t=None, coldcard=None, keepkey=None, bitbox01=None, ledger=None, ledger_legacy=None, jade=None)
+parser.set_defaults(trezor_1=None, trezor_t=None, coldcard=None, keepkey=None, bitbox01=None, ledger=None, ledger_legacy=None, jade=None, onekey_1=None, onekey_t=None)
 
 args = parser.parse_args()
 

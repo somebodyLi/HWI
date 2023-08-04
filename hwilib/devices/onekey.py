@@ -13,7 +13,7 @@ from ..errors import (
     common_err_msgs,
     handle_errors,
 )
-from .trezorlib import protobuf
+from .trezorlib import protobuf, debuglink
 from .trezorlib.transport import (
     udp,
     webusb,
@@ -224,7 +224,7 @@ class OnekeyFeatures(Features):
         self.boardloader_version = boardloader_version
 
 
-ONEKEY_MAPPING = DEFAULT_MAPPING.register(OnekeyFeatures)
+DEFAULT_MAPPING.register(OnekeyFeatures)
 
 USB_IDS = {(0x1209, 0x4F4A), (0x1209, 0x4F4B), }
 
@@ -233,7 +233,7 @@ ONEKEY_LEGACY = TrezorModel(
     minimum_version=(2, 11, 0),
     vendors=VENDORS,
     usb_ids=USB_IDS,
-    default_mapping=ONEKEY_MAPPING,
+    default_mapping=DEFAULT_MAPPING,
 )
 
 ONEKEY_TOUCH = TrezorModel(
@@ -241,7 +241,7 @@ ONEKEY_TOUCH = TrezorModel(
     minimum_version=(4, 2, 0),
     vendors=VENDORS,
     usb_ids=USB_IDS,
-    default_mapping=ONEKEY_MAPPING,
+    default_mapping=DEFAULT_MAPPING,
 )
 
 ONEKEYS = (ONEKEY_LEGACY, ONEKEY_TOUCH)
@@ -267,20 +267,11 @@ def _refresh_features(self: object, features: Features) -> None:
     if features.vendor not in self.model.vendors:
         raise RuntimeError("Unsupported device")
     self.features = features
-    self.version = self.features.onekey_version
+    self.version = (*map(int, self.features.onekey_version.split(".")), )
     self.check_firmware_version(warn_only=True)
     if self.features.session_id is not None:
         self.session_id = self.features.session_id
         self.features.session_id = None
-
-
-def is_outdated(self: object) -> bool:
-    if self.features.bootloader_mode:
-        return False
-
-    assert self.model is not None  # should happen in _refresh_features
-    return self.version < ".".join(map(str, self.model.minimum_version))
-
 
 def button_request(self: object, code: Optional[int]) -> None:
     if not self.prompt_shown:
@@ -291,7 +282,7 @@ def button_request(self: object, code: Optional[int]) -> None:
 
 # ===============overwrite methods for onekey device end============
 
-
+ONEKEY_EMULATOR_PATH = "127.0.0.1:54935"
 class OnekeyClient(TrezorClient):
     def __init__(
         self,
@@ -300,10 +291,10 @@ class OnekeyClient(TrezorClient):
         expert: bool = False,
         chain: Chain = Chain.MAIN,
     ) -> None:
-        super().__init__(path, password, expert, chain, webusb_ids=USB_IDS)
+        super().__init__(path, password, expert, chain, webusb_ids=USB_IDS, sim_path=ONEKEY_EMULATOR_PATH)
         self.client._refresh_features = MethodType(_refresh_features, self.client)
-        self.client.is_outdated = MethodType(is_outdated, self.client)
-        self.client.ui.button_request = MethodType(button_request, self.client.ui)
+        if not isinstance(self.client.ui, debuglink.DebugUI):
+            self.client.ui.button_request = MethodType(button_request, self.client.ui)
         self.type = "OneKey"
 
 
@@ -312,21 +303,18 @@ def enumerate(
 ) -> List[Dict[str, Any]]:
     results = []
     devs = webusb.WebUsbTransport.enumerate(usb_ids=USB_IDS)
-    devs.extend(udp.UdpTransport.enumerate())
+    devs.extend(udp.UdpTransport.enumerate(path=ONEKEY_EMULATOR_PATH))
     for dev in devs:
         d_data: Dict[str, Any] = {}
 
         d_data["type"] = "onekey"
         d_data["path"] = dev.get_path()
         client = None
-        with handle_errors(common_err_msgs["enumerate"], d_data, debug=True):
+        with handle_errors(common_err_msgs["enumerate"], d_data):
             client = OnekeyClient(d_data["path"], password)
             try:
                 client._prepare_device()
             except TypeError:
-                import traceback
-
-                traceback.print_exc()
                 continue
             if not client.client.features.onekey_version or client.client.features.vendor not in VENDORS:
                 continue

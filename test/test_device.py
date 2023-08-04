@@ -313,7 +313,6 @@ class TestGetDescriptors(DeviceTestCase):
 
     def test_getdescriptors(self):
         descriptors = self.do_command(self.dev_args + ['getdescriptors'])
-
         self.assertIn('receive', descriptors)
         self.assertIn('internal', descriptors)
         self.assertEqual(len(descriptors['receive']), 4 if self.emulator.supports_taproot else 3)
@@ -563,7 +562,7 @@ class TestSignTx(DeviceTestCase):
         # Send off final tx to sweep the wallet
         self.wrpc.sendrawtransaction(final_tx)
 
-    # Test wrapper to avoid mixed-inputs signing for Ledger
+    # # Test wrapper to avoid mixed-inputs signing for Ledger
     def test_signtx(self):
 
         for addrtypes, multisig_types, external, op_return in self.signtx_cases:
