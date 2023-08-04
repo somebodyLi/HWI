@@ -291,7 +291,7 @@ def button_request(self: object, code: Optional[int]) -> None:
 
 # ===============overwrite methods for onekey device end============
 
-
+ONEKEY_EMULATOR_PATH = "127.0.0.1:54935"
 class OnekeyClient(TrezorClient):
     def __init__(
         self,
@@ -300,7 +300,7 @@ class OnekeyClient(TrezorClient):
         expert: bool = False,
         chain: Chain = Chain.MAIN,
     ) -> None:
-        super().__init__(path, password, expert, chain, webusb_ids=USB_IDS)
+        super().__init__(path, password, expert, chain, webusb_ids=USB_IDS, sim_path=ONEKEY_EMULATOR_PATH)
         self.client._refresh_features = MethodType(_refresh_features, self.client)
         self.client.is_outdated = MethodType(is_outdated, self.client)
         self.client.ui.button_request = MethodType(button_request, self.client.ui)
@@ -312,21 +312,18 @@ def enumerate(
 ) -> List[Dict[str, Any]]:
     results = []
     devs = webusb.WebUsbTransport.enumerate(usb_ids=USB_IDS)
-    devs.extend(udp.UdpTransport.enumerate())
+    devs.extend(udp.UdpTransport.enumerate(path=ONEKEY_EMULATOR_PATH))
     for dev in devs:
         d_data: Dict[str, Any] = {}
 
         d_data["type"] = "onekey"
         d_data["path"] = dev.get_path()
         client = None
-        with handle_errors(common_err_msgs["enumerate"], d_data, debug=True):
+        with handle_errors(common_err_msgs["enumerate"], d_data):
             client = OnekeyClient(d_data["path"], password)
             try:
                 client._prepare_device()
             except TypeError:
-                import traceback
-
-                traceback.print_exc()
                 continue
             if not client.client.features.onekey_version or client.client.features.vendor not in VENDORS:
                 continue
