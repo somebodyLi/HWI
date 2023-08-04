@@ -313,7 +313,6 @@ class TestGetDescriptors(DeviceTestCase):
 
     def test_getdescriptors(self):
         descriptors = self.do_command(self.dev_args + ['getdescriptors'])
-
         self.assertIn('receive', descriptors)
         self.assertIn('internal', descriptors)
         self.assertEqual(len(descriptors['receive']), 4 if self.emulator.supports_taproot else 3)
