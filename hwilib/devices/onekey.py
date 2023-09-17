@@ -230,6 +230,7 @@ USB_IDS = {(0x1209, 0x4F4A), (0x1209, 0x4F4B), }
 
 ONEKEY_LEGACY = TrezorModel(
     name="1",
+    internal_name="T1B1",
     minimum_version=(2, 11, 0),
     vendors=VENDORS,
     usb_ids=USB_IDS,
@@ -238,6 +239,7 @@ ONEKEY_LEGACY = TrezorModel(
 
 ONEKEY_TOUCH = TrezorModel(
     name="T",
+    internal_name="T2T1",
     minimum_version=(4, 2, 0),
     vendors=VENDORS,
     usb_ids=USB_IDS,
